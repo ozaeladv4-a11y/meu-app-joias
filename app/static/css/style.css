@@ -1,0 +1,29 @@
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 9999px;
+}
+
+#sidebar::-webkit-scrollbar-thumb {
+    background-color: #475569;
+}
+
+/* Controla a sidebar mobile fora do cascade de utilitários do Tailwind CDN
+   (evitar conflito entre !important em variável CSS e na propriedade transform). */
+#sidebar.mobile-closed {
+    transform: translateX(-100%);
+}
+
+@media (min-width: 1024px) {
+    #sidebar.mobile-closed {
+        transform: none;
+    }
+}

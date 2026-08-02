@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Joias</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            keyframes: {
+              fadeIn: {
+                "0%": { opacity: 0, transform: "translateY(-8px)" },
+                "100%": { opacity: 1, transform: "translateY(0)" },
+              },
+            },
+            animation: {
+              "fade-in": "fadeIn 0.25s ease-out",
+            },
+          },
+        },
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="h-full bg-slate-50 text-slate-800">
+    <div id="toast-container" class="fixed top-4 right-4 z-[60] flex flex-col gap-2"></div>
+
+    <div class="flex h-full">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-300 flex flex-col transition-transform mobile-closed overflow-y-auto">
+            <div class="px-5 py-5 border-b border-slate-800">
+                <h1 class="text-lg font-bold text-white">💎 Gestão de Joias</h1>
+            </div>
+            <nav class="flex-1 px-3 py-4 space-y-1">
+                <a href="#gerencial" data-view="gerencial" data-label="Informações Gerais" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+                    <span>📊</span><span>Informações Gerais</span>
+                </a>
+                <a href="#estoque" data-view="estoque" data-label="Gestão de Estoque" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+                    <span>💎</span><span>Gestão de Estoque</span>
+                </a>
+                <a href="#clientes" data-view="clientes" data-label="Cadastro de Clientes" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+                    <span>👥</span><span>Cadastro de Clientes</span>
+                </a>
+                <a href="#vendas" data-view="vendas" data-label="Registro de Vendas" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+                    <span>🛍️</span><span>Registro de Vendas</span>
+                </a>
+                <a href="#parcelas" data-view="parcelas" data-label="Baixa de Parcelas" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+                    <span>💳</span><span>Baixa de Parcelas</span>
+                </a>
+            </nav>
+            <div class="px-5 py-4 border-t border-slate-800 text-xs text-slate-500">Sistema pessoal de gestão</div>
+        </aside>
+
+        <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/40 z-30 lg:hidden"></div>
+
+        <!-- Conteúdo principal -->
+        <div class="flex-1 flex flex-col min-w-0">
+            <header class="flex items-center gap-3 bg-white border-b border-slate-200 px-4 py-3 lg:px-6">
+                <button id="btn-menu-toggle" class="lg:hidden text-slate-600">
+                    <span class="text-xl">☰</span>
+                </button>
+                <h2 id="page-title" class="text-lg font-semibold text-slate-800">Informações Gerais</h2>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
+                <!-- ============ VIEW: Informações Gerais ============ -->
+                <section id="view-gerencial" class="view space-y-6">
+                    <div class="bg-white rounded-lg border border-slate-200 p-4 flex flex-wrap items-end gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Período</label>
+                            <select id="periodo-select" class="rounded-md border border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="mes_atual" selected>Mês Atual</option>
+                                <option value="30_dias">Últimos 30 Dias</option>
+                                <option value="ano_atual">Este Ano</option>
+                                <option value="personalizado">Personalizado</option>
+                            </select>
+                        </div>
+                        <div id="periodo-personalizado" class="hidden flex flex-wrap items-end gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Data Início</label>
+                                <input type="date" id="periodo-inicio" class="rounded-md border border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Data Fim</label>
+                                <input type="date" id="periodo-fim" class="rounded-md border border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                            <button id="periodo-aplicar" class="px-4 py-2 rounded-md bg-amber-600 text-white text-sm font-medium hover:bg-amber-700">Aplicar</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white rounded-lg border border-slate-200 p-5">
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Faturamento Total</p>
+                            <p id="card-faturamento" class="mt-2 text-2xl font-bold text-slate-800">R$ 0,00</p>
+                        </div>
+                        <div class="bg-white rounded-lg border border-slate-200 p-5">
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">CMV</p>
+                            <p id="card-cmv" class="mt-2 text-2xl font-bold text-slate-800">R$ 0,00</p>
+                        </div>
+                        <div class="bg-white rounded-lg border border-slate-200 p-5">
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Lucro Bruto</p>
+                            <p id="card-lucro" class="mt-2 text-2xl font-bold text-emerald-600">R$ 0,00</p>
+                        </div>
+                        <div class="bg-white rounded-lg border border-slate-200 p-5">
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Margem Média</p>
+                            <p id="card-margem" class="mt-2 text-2xl font-bold text-amber-600">0%</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div class="lg:col-span-2 bg-white rounded-lg border border-slate-200 p-5">
+                            <h3 class="text-sm font-semibold text-slate-700 mb-3">Evolução de Vendas vs. Lucro</h3>
+                            <div class="h-72">
+                                <canvas id="chart-evolucao"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg border border-slate-200 p-5">
+                            <h3 class="text-sm font-semibold text-slate-700 mb-3">Vendas por Categoria</h3>
+                            <div class="h-72">
+                                <canvas id="chart-categoria"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div class="lg:col-span-2 bg-white rounded-lg border border-slate-200 p-5">
+                            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                                <h3 class="text-sm font-semibold text-slate-700">⚠️ Alerta de Estoque Parado (&gt; 60 dias)</h3>
+                                <span class="text-sm text-slate-500">Imobilizado: <span id="total-imobilizado-parado" class="font-semibold text-slate-800">R$ 0,00</span></span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="text-xs text-slate-500 uppercase border-b border-slate-200">
+                                        <tr>
+                                            <th class="py-2 px-3">Peça</th>
+                                            <th class="py-2 px-3">Categoria</th>
+                                            <th class="py-2 px-3">Entrada</th>
+                                            <th class="py-2 px-3">Parada há</th>
+                                            <th class="py-2 px-3">Custo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-estoque-parado"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg border border-slate-200 p-5">
+                            <h3 class="text-sm font-semibold text-slate-700 mb-3">💳 Inadimplência</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <p class="text-xs text-slate-500">Valor total vencido</p>
+                                    <p id="inadimplencia-valor-atrasado" class="text-xl font-bold text-red-600">R$ 0,00</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-500">Índice de inadimplência (sobre o crediário em aberto)</p>
+                                    <p id="inadimplencia-indice" class="text-xl font-bold text-slate-800">0%</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-500">Parcelas em atraso</p>
+                                    <p id="inadimplencia-qtd" class="text-sm font-medium text-slate-700">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============ VIEW: Gestão de Estoque ============ -->
+                <section id="view-estoque" class="view hidden space-y-4">
+                    <div class="bg-white rounded-lg border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <label class="text-xs font-medium text-slate-500">Status</label>
+                            <select id="estoque-filtro-status" class="rounded-md border border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="">Todos</option>
+                                <option value="Disponível">Disponível</option>
+                                <option value="Vendido">Vendido</option>
+                                <option value="Baixado">Baixado</option>
+                            </select>
+                        </div>
+                        <button id="btn-nova-peca" class="px-4 py-2 rounded-md bg-amber-600 text-white text-sm font-medium hover:bg-amber-700">+ Nova Peça</button>
+                    </div>
+
+                    <div class="bg-white rounded-lg border border-slate-200 overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-500 uppercase border-b border-slate-200 bg-slate-50">
+                                <tr>
+                                    <th class="py-2.5 px-3">Descrição</th>
+                                    <th class="py-2.5 px-3">Categoria</th>
+                                    <th class="py-2.5 px-3">Peso (g)</th>
+                                    <th class="py-2.5 px-3">Custo</th>
+                                    <th class="py-2.5 px-3">Venda</th>
+                                    <th class="py-2.5 px-3">Margem</th>
+                                    <th class="py-2.5 px-3">Status</th>
+                                    <th class="py-2.5 px-3">Entrada</th>
+                                    <th class="py-2.5 px-3">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-estoque"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ============ VIEW: Cadastro de Clientes ============ -->
+                <section id="view-clientes" class="view hidden space-y-4">
+                    <div class="bg-white rounded-lg border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                        <input id="clientes-busca" type="text" placeholder="Buscar por nome ou CPF..." class="rounded-md border border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 w-64">
+                        <button id="btn-novo-cliente" class="px-4 py-2 rounded-md bg-amber-600 text-white text-sm font-medium hover:bg-amber-700">+ Novo Cliente</button>
+                    </div>
+
+                    <div class="bg-white rounded-lg border border-slate-200 overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-500 uppercase border-b border-slate-200 bg-slate-50">
+                                <tr>
+                                    <th class="py-2.5 px-3">Nome</th>
+                                    <th class="py-2.5 px-3">CPF</th>
+                                    <th class="py-2.5 px-3">Telefone</th>
+                                    <th class="py-2.5 px-3">Endereço</th>
+                                    <th class="py-2.5 px-3">Cadastro</th>
+                                    <th class="py-2.5 px-3">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-clientes"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ============ VIEW: Registro de Vendas ============ -->
+                <section id="view-vendas" class="view hidden space-y-4">
+                    <div class="bg-white rounded-lg border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <label class="text-xs font-medium text-slate-500">Status</label>
+                            <select id="vendas-filtro-status" class="rounded-md border border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="">Todos</option>
+                                <option value="Em Andamento">Em Andamento</option>
+                                <option value="Quitada">Quitada</option>
+                            </select>
+                        </div>
+                        <button id="btn-nova-venda" class="px-4 py-2 rounded-md bg-amber-600 text-white text-sm font-medium hover:bg-amber-700">+ Nova Venda</button>
+                    </div>
+
+                    <div class="bg-white rounded-lg border border-slate-200 overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-500 uppercase border-b border-slate-200 bg-slate-50">
+                                <tr>
+                                    <th class="py-2.5 px-3">Data</th>
+                                    <th class="py-2.5 px-3">Cliente</th>
+                                    <th class="py-2.5 px-3">Peça</th>
+                                    <th class="py-2.5 px-3">Valor</th>
+                                    <th class="py-2.5 px-3">Entrada</th>
+                                    <th class="py-2.5 px-3">Parcelas</th>
+                                    <th class="py-2.5 px-3">Status</th>
+                                    <th class="py-2.5 px-3">Carnê</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-vendas"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ============ VIEW: Baixa de Parcelas ============ -->
+                <section id="view-parcelas" class="view hidden space-y-4">
+                    <div class="bg-white rounded-lg border border-slate-200 p-4 flex items-center gap-3">
+                        <label class="text-xs font-medium text-slate-500">Status</label>
+                        <select id="parcelas-filtro-status" class="rounded-md border border-slate-300 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <option value="Atrasada" selected>Atrasada</option>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Paga">Paga</option>
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-white rounded-lg border border-slate-200 overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-500 uppercase border-b border-slate-200 bg-slate-50">
+                                <tr>
+                                    <th class="py-2.5 px-3">Cliente</th>
+                                    <th class="py-2.5 px-3">Peça</th>
+                                    <th class="py-2.5 px-3">Nº</th>
+                                    <th class="py-2.5 px-3">Vencimento</th>
+                                    <th class="py-2.5 px-3">Valor</th>
+                                    <th class="py-2.5 px-3">Status</th>
+                                    <th class="py-2.5 px-3">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-parcelas"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- ============ MODAL: Peça ============ -->
+    <div id="modal-peca" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+                <h3 id="modal-peca-titulo" class="text-lg font-semibold text-slate-800">Nova Peça</h3>
+                <button type="button" data-close-modal="modal-peca" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+            </div>
+            <form id="form-peca" class="p-5 space-y-4">
+                <input type="hidden" id="peca-id">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Descrição *</label>
+                    <input required id="peca-descricao" type="text" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
+                    <input id="peca-categoria" type="text" list="lista-categorias" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    <datalist id="lista-categorias">
+                        <option value="Anéis"></option>
+                        <option value="Correntes"></option>
+                        <option value="Brincos"></option>
+                        <option value="Pulseiras"></option>
+                        <option value="Alianças"></option>
+                        <option value="Relógios"></option>
+                    </datalist>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Peso (g)</label>
+                    <input id="peca-peso" type="number" step="0.01" min="0" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Preço Custo (R$)</label>
+                        <input id="peca-custo" type="number" step="0.01" min="0" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Preço Venda (R$)</label>
+                        <input id="peca-venda-preco" type="number" step="0.01" min="0" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" data-close-modal="modal-peca" class="px-4 py-2 rounded-md border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 rounded-md bg-amber-600 text-white text-sm font-medium hover:bg-amber-700">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ MODAL: Cliente ============ -->
+    <div id="modal-cliente" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+                <h3 id="modal-cliente-titulo" class="text-lg font-semibold text-slate-800">Novo Cliente</h3>
+                <button type="button" data-close-modal="modal-cliente" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+            </div>
+            <form id="form-cliente" class="p-5 space-y-4">
+                <input type="hidden" id="cliente-id">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Nome *</label>
+                    <input required id="cliente-nome" type="text" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">CPF</label>
+                    <input id="cliente-cpf" type="text" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Telefone</label>
+                    <input id="cliente-telefone" type="text" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Endereço</label>
+                    <input id="cliente-endereco" type="text" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" data-close-modal="modal-cliente" class="px-4 py-2 rounded-md border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 rounded-md bg-amber-600 text-white text-sm font-medium hover:bg-amber-700">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============ MODAL: Venda (com geração de carnê) ============ -->
+    <div id="modal-venda" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+                <h3 id="modal-venda-titulo" class="text-lg font-semibold text-slate-800">Nova Venda</h3>
+                <button type="button" data-close-modal="modal-venda" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+            </div>
+
+            <div id="venda-form-area" class="p-5">
+                <form id="form-venda" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Cliente *</label>
+                        <select required id="venda-cliente" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Peça *</label>
+                        <select required id="venda-peca" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Valor da Venda (R$) *</label>
+                            <input required id="venda-valor" type="number" step="0.01" min="0" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Entrada (R$)</label>
+                            <input id="venda-entrada" type="number" step="0.01" min="0" value="0" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Nº de Parcelas</label>
+                            <input id="venda-parcelas" type="number" step="1" min="0" value="0" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Intervalo (dias)</label>
+                            <input id="venda-intervalo" type="number" step="1" min="1" value="30" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Vencimento da 1ª Parcela</label>
+                        <input id="venda-primeira-parcela" type="date" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+
+                    <div class="bg-amber-50 border border-amber-100 rounded-md p-3 text-sm space-y-1">
+                        <p class="flex justify-between"><span class="text-slate-600">Valor a financiar:</span> <span id="venda-resumo-financiado" class="font-semibold text-slate-800">R$ 0,00</span></p>
+                        <p class="flex justify-between"><span class="text-slate-600">Valor por parcela:</span> <span id="venda-resumo-parcela" class="font-semibold text-slate-800">-</span></p>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button type="button" data-close-modal="modal-venda" class="px-4 py-2 rounded-md border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 rounded-md bg-amber-600 text-white text-sm font-medium hover:bg-amber-700">Registrar Venda</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="venda-resultado" class="hidden p-5 space-y-4">
+                <p class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-md px-3 py-2">✓ Carnê gerado com sucesso</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-slate-500 uppercase border-b border-slate-200">
+                            <tr>
+                                <th class="py-2 px-3">Parcela</th>
+                                <th class="py-2 px-3">Vencimento</th>
+                                <th class="py-2 px-3">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="venda-carne-corpo"></tbody>
+                    </table>
+                </div>
+                <div class="flex justify-end pt-2 border-t border-slate-100">
+                    <button type="button" data-close-modal="modal-venda" class="px-4 py-2 rounded-md bg-amber-600 text-white text-sm font-medium hover:bg-amber-700">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MODAL: Baixa de Parcela ============ -->
+    <div id="modal-baixa-parcela" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-800">Dar Baixa em Parcela</h3>
+                <button type="button" data-close-modal="modal-baixa-parcela" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+            </div>
+            <form id="form-baixa-parcela" class="p-5 space-y-4">
+                <input type="hidden" id="baixa-parcela-id">
+                <p id="baixa-parcela-info" class="text-sm text-slate-600 bg-slate-50 rounded-md px-3 py-2"></p>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Valor Pago (R$) *</label>
+                    <input required id="baixa-valor-pago" type="number" step="0.01" min="0" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Data do Pagamento</label>
+                    <input id="baixa-data-pagamento" type="date" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Forma de Pagamento</label>
+                    <input id="baixa-forma-pagamento" type="text" placeholder="Pix, dinheiro, cartão..." class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Observações</label>
+                    <textarea id="baixa-observacoes" rows="2" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" data-close-modal="modal-baixa-parcela" class="px-4 py-2 rounded-md border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 rounded-md bg-amber-600 text-white text-sm font-medium hover:bg-amber-700">Confirmar Baixa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/charts.js"></script>
+    <script src="/static/js/modals.js"></script>
+    <script src="/static/js/views/gerencial.js"></script>
+    <script src="/static/js/views/estoque.js"></script>
+    <script src="/static/js/views/clientes.js"></script>
+    <script src="/static/js/views/vendas.js"></script>
+    <script src="/static/js/views/parcelas.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
