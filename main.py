@@ -26,7 +26,12 @@ app.include_router(gerencial.router)
 
 @app.exception_handler(APIError)
 async def supabase_error_handler(request: Request, exc: APIError):
-    return JSONResponse(status_code=400, content={"detail": exc.message or "Erro na API do Supabase"})
+    detail = exc.message or "Erro na API do Supabase"
+    if exc.details:
+        detail = f"{detail} | details: {exc.details}"
+    if exc.hint:
+        detail = f"{detail} | hint: {exc.hint}"
+    return JSONResponse(status_code=400, content={"detail": detail, "code": exc.code})
 
 
 @app.exception_handler(RuntimeError)
