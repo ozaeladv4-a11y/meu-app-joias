@@ -9,6 +9,10 @@ load_dotenv()
 
 @lru_cache
 def get_supabase() -> Client:
-    url = os.environ["SUPABASE_URL"]
-    key = os.environ["SUPABASE_KEY"]
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_KEY")
+    if not url or not key:
+        raise RuntimeError(
+            "SUPABASE_URL e SUPABASE_KEY não estão configuradas nas variáveis de ambiente."
+        )
     return create_client(url, key)

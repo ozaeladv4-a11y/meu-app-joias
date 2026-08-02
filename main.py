@@ -29,6 +29,11 @@ async def supabase_error_handler(request: Request, exc: APIError):
     return JSONResponse(status_code=400, content={"detail": exc.message or "Erro na API do Supabase"})
 
 
+@app.exception_handler(RuntimeError)
+async def supabase_config_error_handler(request: Request, exc: RuntimeError):
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+
 @app.get("/")
 async def read_root(request: Request):
     return templates.TemplateResponse(request, "index.html")
