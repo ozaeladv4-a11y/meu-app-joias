@@ -8,7 +8,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from postgrest import APIError
 
-from app.routers import clientes, estoque, gerencial, parcelas, vendas
+from app.routers import auth, clientes, estoque, gerencial, parcelas, vendas
+from app.services.auth import COOKIE_NAME, verify_session_token
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -17,11 +18,25 @@ app = FastAPI(title="Gestão de Joias")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "app" / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "app" / "templates")
 
+app.include_router(auth.router)
 app.include_router(clientes.router)
 app.include_router(estoque.router)
 app.include_router(vendas.router)
 app.include_router(parcelas.router)
 app.include_router(gerencial.router)
+
+
+@app.middleware("http")
+async def exigir_autenticacao(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/api") and not path.startswith("/api/auth"):
+        try:
+            autenticado = verify_session_token(request.cookies.get(COOKIE_NAME))
+        except RuntimeError as exc:
+            return JSONResponse(status_code=503, content={"detail": str(exc)})
+        if not autenticado:
+            return JSONResponse(status_code=401, content={"detail": "Não autenticado"})
+    return await call_next(request)
 
 
 @app.exception_handler(APIError)

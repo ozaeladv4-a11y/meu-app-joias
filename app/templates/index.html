@@ -28,7 +28,7 @@
 <body class="h-full bg-slate-50 text-slate-800">
     <div id="toast-container" class="fixed top-4 right-4 z-[60] flex flex-col gap-2"></div>
 
-    <div class="flex h-full">
+    <div id="app-shell" class="flex h-full">
         <!-- Sidebar -->
         <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-300 flex flex-col transition-transform mobile-closed overflow-y-auto">
             <div class="px-5 py-5 border-b border-slate-800">
@@ -482,6 +482,35 @@
         </div>
     </div>
 
+    <!-- ============ TELA: Bloqueio de Acesso ============ -->
+    <div id="lock-screen" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div class="h-1.5 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-700"></div>
+            <div class="px-8 py-10">
+                <div class="flex items-center justify-center gap-2 mb-8">
+                    <span class="text-2xl">💎</span>
+                    <span class="text-xl font-bold text-slate-800">Gestão de Joias</span>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 text-center mb-6">Acesso Restrito</h2>
+                <form id="form-lock-screen" class="space-y-4">
+                    <input
+                        id="lock-senha"
+                        type="password"
+                        required
+                        autocomplete="current-password"
+                        placeholder="Senha de Acesso"
+                        class="w-full rounded-lg border-2 border-slate-200 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+                    >
+                    <p id="lock-erro" class="hidden text-sm text-red-600 text-center"></p>
+                    <div class="text-center">
+                        <button type="button" id="btn-recuperar-senha" class="text-sm text-blue-600 hover:underline">Esqueceu sua senha? / Recuperar Senha</button>
+                    </div>
+                    <button type="submit" id="btn-entrar" class="w-full rounded-lg bg-blue-900 text-white font-semibold py-3 text-sm hover:bg-blue-800 transition">Entrar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/js/utils.js"></script>
     <script src="/static/js/api.js"></script>
     <script src="/static/js/charts.js"></script>
@@ -492,5 +521,6 @@
     <script src="/static/js/views/vendas.js"></script>
     <script src="/static/js/views/parcelas.js"></script>
     <script src="/static/js/app.js"></script>
+    <script src="/static/js/auth.js"></script>
 </body>
 </html>

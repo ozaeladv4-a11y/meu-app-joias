@@ -37,7 +37,7 @@ function rotaAtual() {
   return Views[hash] ? hash : "gerencial";
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+function iniciarApp() {
   Modals.init();
 
   document.querySelectorAll(".nav-link").forEach((link) => {
@@ -56,4 +56,4 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("hashchange", () => mostrarView(rotaAtual()));
 
   mostrarView(rotaAtual());
-});
+}
