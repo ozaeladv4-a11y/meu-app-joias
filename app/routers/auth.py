@@ -5,6 +5,7 @@ from app.services.auth import (
     COOKIE_NAME,
     SESSION_MAX_AGE,
     create_session_token,
+    extrair_token,
     verify_password,
     verify_session_token,
 )
@@ -31,9 +32,10 @@ def login(dados: LoginRequest, response: Response, request: Request):
         secure=request.url.scheme == "https",
         path="/",
     )
-    return {"ok": True}
+    return {"ok": True, "token": token}
 
 
 @router.get("/status")
 def status(request: Request):
-    return {"authenticated": verify_session_token(request.cookies.get(COOKIE_NAME))}
+    token = extrair_token(request.cookies.get(COOKIE_NAME), request.headers.get("authorization"))
+    return {"authenticated": verify_session_token(token)}

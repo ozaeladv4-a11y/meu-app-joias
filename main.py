@@ -3,17 +3,25 @@ from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from postgrest import APIError
 
 from app.routers import auth, clientes, estoque, gerencial, parcelas, vendas
-from app.services.auth import COOKIE_NAME, verify_session_token
+from app.services.auth import COOKIE_NAME, extrair_token, verify_session_token
 
 BASE_DIR = Path(__file__).resolve().parent
 
 app = FastAPI(title="Gestão de Joias")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "app" / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "app" / "templates")
@@ -29,9 +37,10 @@ app.include_router(gerencial.router)
 @app.middleware("http")
 async def exigir_autenticacao(request: Request, call_next):
     path = request.url.path
-    if path.startswith("/api") and not path.startswith("/api/auth"):
+    if request.method != "OPTIONS" and path.startswith("/api") and not path.startswith("/api/auth"):
+        token = extrair_token(request.cookies.get(COOKIE_NAME), request.headers.get("authorization"))
         try:
-            autenticado = verify_session_token(request.cookies.get(COOKIE_NAME))
+            autenticado = verify_session_token(token)
         except RuntimeError as exc:
             return JSONResponse(status_code=503, content={"detail": str(exc)})
         if not autenticado:

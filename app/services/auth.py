@@ -34,6 +34,14 @@ def create_session_token() -> str:
     return f"{payload.decode()}.{assinatura_encoded.decode()}"
 
 
+def extrair_token(cookie_token: str | None, auth_header: str | None) -> str | None:
+    if cookie_token:
+        return cookie_token
+    if auth_header and auth_header.lower().startswith("bearer "):
+        return auth_header[7:].strip()
+    return None
+
+
 def verify_session_token(token: str | None) -> bool:
     if not token or "." not in token:
         return False
