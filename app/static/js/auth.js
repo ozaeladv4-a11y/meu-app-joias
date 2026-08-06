@@ -17,6 +17,7 @@ const Auth = {
 
     document.getElementById("form-lock-screen").addEventListener("submit", (e) => this.tentarLogin(e));
     document.getElementById("btn-recuperar-senha").addEventListener("click", () => this.mostrarRecuperacao());
+    document.getElementById("btn-sair").addEventListener("click", () => this.sair());
   },
 
   bloquear() {
@@ -60,6 +61,15 @@ const Auth = {
       botao.disabled = false;
       botao.textContent = "Entrar";
     }
+  },
+
+  async sair() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (_) {
+      // ignora falha de rede, tela de bloqueio é exibida de qualquer forma
+    }
+    window.location.reload();
   },
 
   mostrarRecuperacao() {

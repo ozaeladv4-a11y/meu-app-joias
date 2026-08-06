@@ -39,3 +39,9 @@ def login(dados: LoginRequest, response: Response, request: Request):
 def status(request: Request):
     token = extrair_token(request.cookies.get(COOKIE_NAME), request.headers.get("authorization"))
     return {"authenticated": verify_session_token(token)}
+
+
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(key=COOKIE_NAME, path="/")
+    return {"ok": True}
