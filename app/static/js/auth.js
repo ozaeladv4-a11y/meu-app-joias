@@ -10,7 +10,7 @@ const Auth = {
     }
 
     if (autenticado) {
-      this.desbloquear(false);
+      this.desbloquear(true);
     } else {
       this.bloquear();
     }
