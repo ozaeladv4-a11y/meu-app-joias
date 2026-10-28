@@ -2,13 +2,13 @@
 -- Gestão de Joias — Schema dedicado 'joias' dentro do Supabase Pro
 -- =====================================================================
 
--- 1. Criação do Schema dedicado
+-- 1. Criação do Schema dedicado joias
 create schema if not exists joias;
 
--- 2. Habilita a extensão pgcrypto
+-- 2. Habilita extensão pgcrypto
 create extension if not exists pgcrypto;
 
--- 3. Tabela: Clientes
+-- 3. Clientes com RLS
 create table if not exists joias.clientes (
     id             uuid primary key default gen_random_uuid(),
     nome           text not null,
@@ -17,8 +17,9 @@ create table if not exists joias.clientes (
     endereco       text,
     data_cadastro  timestamp not null default now()
 );
+alter table joias.clientes enable row level security;
 
--- 4. Tabela: Estoque
+-- 4. Estoque com RLS
 create table if not exists joias.estoque (
     id            uuid primary key default gen_random_uuid(),
     descricao     text not null,
@@ -32,8 +33,9 @@ create table if not exists joias.estoque (
     data_entrada  date not null default current_date,
     data_saida    date
 );
+alter table joias.estoque enable row level security;
 
--- 5. Tabela: Vendas
+-- 5. Vendas com RLS
 create table if not exists joias.vendas (
     id                uuid primary key default gen_random_uuid(),
     data_venda        timestamp not null default now(),
@@ -45,11 +47,11 @@ create table if not exists joias.vendas (
     qtd_parcelas      int,
     status_venda      text
 );
-
+alter table joias.vendas enable row level security;
 create index if not exists idx_joias_vendas_cliente_id on joias.vendas(cliente_id);
 create index if not exists idx_joias_vendas_peca_id on joias.vendas(peca_id);
 
--- 6. Tabela: Parcelas
+-- 6. Parcelas com RLS
 create table if not exists joias.parcelas (
     id                uuid primary key default gen_random_uuid(),
     venda_id          uuid references joias.vendas(id) on delete cascade,
@@ -62,10 +64,10 @@ create table if not exists joias.parcelas (
     forma_pagamento   text,
     observacoes       text
 );
-
+alter table joias.parcelas enable row level security;
 create index if not exists idx_joias_parcelas_venda_id on joias.parcelas(venda_id);
 
--- 7. View: Relatório Gerencial
+-- 7. Views Gerenciais
 create or replace view joias.vw_relatorio_gerencial as
 select
     date_trunc('month', v.data_venda)::date as periodo,
@@ -77,7 +79,6 @@ join joias.estoque e on e.id = v.peca_id
 group by date_trunc('month', v.data_venda)
 order by periodo;
 
--- 8. View: Estoque Parado
 create or replace view joias.vw_estoque_parado as
 select
     case
@@ -100,12 +101,19 @@ group by
     end
 order by min(current_date - data_entrada);
 
--- 9. Permissões de acesso ao schema joias para as roles da API do Supabase
-grant usage on schema joias to anon, authenticated, service_role;
-grant all on all tables in schema joias to anon, authenticated, service_role;
-grant all on all routines in schema joias to anon, authenticated, service_role;
-grant all on all sequences in schema joias to anon, authenticated, service_role;
+-- 8. Permissões EXCLUSIVAS para service_role (SEM NADA para anon)
+revoke all on schema joias from public, anon;
+grant usage on schema joias to service_role;
+grant all on all tables in schema joias to service_role;
+grant all on all routines in schema joias to service_role;
+grant all on all sequences in schema joias to service_role;
 
-alter default privileges in schema joias grant all on tables to anon, authenticated, service_role;
-alter default privileges in schema joias grant all on routines to anon, authenticated, service_role;
-alter default privileges in schema joias grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema joias grant all on tables to service_role;
+alter default privileges in schema joias grant all on routines to service_role;
+alter default privileges in schema joias grant all on sequences to service_role;
+
+-- Policies para permitir bypass automático da service_role mantendo proteção de RLS
+create policy "service_role_all_clientes" on joias.clientes for all to service_role using (true) with check (true);
+create policy "service_role_all_estoque" on joias.estoque for all to service_role using (true) with check (true);
+create policy "service_role_all_vendas" on joias.vendas for all to service_role using (true) with check (true);
+create policy "service_role_all_parcelas" on joias.parcelas for all to service_role using (true) with check (true);
